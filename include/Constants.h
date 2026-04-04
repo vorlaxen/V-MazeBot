@@ -1,43 +1,35 @@
 #pragma once
 #include <Arduino.h>
 
-namespace Pins {
-    // Motor Pins
-    constexpr uint8_t PWM_L = 6;
-    constexpr uint8_t IN2_L = 7;
-    constexpr uint8_t IN1_L = 8;
-    
-    constexpr uint8_t IN1_R = 9;
-    constexpr uint8_t IN2_R = 10;
-    constexpr uint8_t PWM_R = 11;
+// Motor pins
+constexpr int L_PWM = 6;
+constexpr int L_IN1 = 8;
+constexpr int L_IN2 = 7;
 
-    // Sensor Emitter Pins
-    constexpr uint8_t EMIT_FL = A4;
-    constexpr uint8_t EMIT_FR = A5;
-    constexpr uint8_t EMIT_SIDES = 13;
-    constexpr uint8_t QTR_ON = 12; // Emitter Power?
+constexpr int R_PWM = 11;
+constexpr int R_IN1 = 9;
+constexpr int R_IN2 = 10;
 
-    // Sensor Receiver Pins
-    constexpr uint8_t REC_FL = A0;
-    constexpr uint8_t REC_L = A1;
-    constexpr uint8_t REC_R = A2;
-    constexpr uint8_t REC_FR = A3;
-}
+// Sensor pins
+constexpr int S_FRONT_L = A0;
+constexpr int S_LEFT    = A1;
+constexpr int S_RIGHT   = A2;
+constexpr int S_FRONT_R = A3;
 
-namespace Config {
-    // Sensor Thresholds
-    constexpr int THRESH_WALL_FRONT = 250;
-    constexpr int THRESH_WALL_SIDE = 200;
-    constexpr int TARGET_DIST_SIDE = 300;
+// IR emitters
+constexpr int IR_FRONT_L = A4;
+constexpr int IR_FRONT_R = A5;
+constexpr int IR_SIDE    = 13;
 
-    // Speeds
-    constexpr int SPEED_BASE = 70;
-    constexpr int SPEED_TURN = 80;
+// Robot speed
+constexpr int BASE_SPEED = 60;
 
-    // PID Tunings for Wall Follow
-    constexpr float WALL_KP = 0.18f;
-    constexpr float WALL_KI = 0.00005f;
-    constexpr float WALL_KD = 0.28f;
-    constexpr float WALL_PID_LIMIT = 40.0f;
-    constexpr float WALL_I_LIMIT = 300.0f;
-}
+// PID
+constexpr float KP = 0.3f;
+constexpr float KD = 0.5f;
+constexpr float KI = 0.0001f;
+
+// Sensor thresholds
+constexpr int FRONT_WALL = 250;
+constexpr int SIDE_WALL  = 200;
+constexpr int TARGET_DIST = 300;
