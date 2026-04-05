@@ -21,6 +21,8 @@ void Robot::begin()
 
     currentRule = new RightHandRule();
     currentRule->setThreshold(700);
+
+    state = RobotState::DRIVE;
 }
 
 void Robot::update()
@@ -33,6 +35,12 @@ void Robot::update()
 
     sensors.update();
 
+    if(state == RobotState::TURNING)
+    {
+        handleTurn(now);
+        return;
+    }
+
     MoveAction nextAction = currentRule->decide(
         sensors.left(),
         sensors.right(),
@@ -40,54 +48,95 @@ void Robot::update()
         sensors.frontRight()
     );
 
-    switch (nextAction)
+    if(nextAction != MoveAction::FORWARD)
     {
-        case MoveAction::FORWARD:
-        {
-            float error = sensors.getCenterError();
-            float correction = wallPID.compute(error, 0, dt);
+        startTurn(nextAction);
+        return;
+    }
 
-            motor.setMotorSpeed(
-                BASE_SPEED + correction,
-                BASE_SPEED - correction
-            );
-            break;
-        }
+    float error = calculateWallError();
 
-        case MoveAction::TURN_RIGHT:
-        case MoveAction::TURN_LEFT:
-        case MoveAction::U_TURN:
-            executeTurn(nextAction);
-            break;
+    if(error == 0)
+    {
+        motor.setMotorSpeed(BASE_SPEED, BASE_SPEED);
+        wallPID.reset();
+    }
+    else
+    {
+        float correction = wallPID.compute(error, 0, dt);
 
-        case MoveAction::STOP:
-            motor.setMotorSpeed(0,0);
-            break;
+        int left = constrain(BASE_SPEED - correction, -255, 255);
+        int right = constrain(BASE_SPEED + correction, -255, 255);
+
+        motor.setMotorSpeed(left, right);
     }
 }
 
-void Robot::executeTurn(MoveAction action)
+void Robot::startTurn(MoveAction action)
 {
-    motor.setMotorSpeed(0,0);
-    delay(50);
+    state = RobotState::TURNING;
+    turnAction = action;
+    turnStart = millis();
 
-    if (action == MoveAction::TURN_RIGHT)
+    if(action == MoveAction::TURN_RIGHT)
     {
         motor.tankTurnRight(120);
-        delay(380);
+        turnDuration = 380;
     }
-    else if (action == MoveAction::TURN_LEFT)
+    else if(action == MoveAction::TURN_LEFT)
     {
         motor.tankTurnLeft(120);
-        delay(380);
+        turnDuration = 380;
     }
-    else if (action == MoveAction::U_TURN)
+    else if(action == MoveAction::U_TURN)
     {
         motor.tankTurnRight(120);
-        delay(750);
+        turnDuration = 750;
     }
 
-    motor.setMotorSpeed(0,0);
     wallPID.reset();
-    delay(50);
+}
+
+void Robot::handleTurn(unsigned long now)
+{
+    if(now - turnStart >= turnDuration)
+    {
+        state = RobotState::DRIVE;
+        motor.setMotorSpeed(BASE_SPEED, BASE_SPEED);
+    }
+}
+
+float Robot::calculateWallError()
+{
+    int left = sensors.left();
+    int right = sensors.right();
+    int frontLeft = sensors.frontLeft();
+    int frontRight = sensors.frontRight();
+
+    wallMask = 0;
+
+    const int TARGET = 300;
+    const int onWallThreshold = 250;
+    const int sideWallThreshold = 200;
+
+    if(frontLeft > onWallThreshold || frontRight > onWallThreshold)
+        wallMask |= 0b010;
+
+    if(left > sideWallThreshold)
+        wallMask |= 0b100;
+
+    if(right > sideWallThreshold)
+        wallMask |= 0b001;
+
+    if(wallMask == 0b101)
+        return (right - left) * 0.5;
+
+    else if(wallMask & 0b001)
+        return right - TARGET;
+
+    else if(wallMask & 0b100)
+        return TARGET - left;
+
+    else
+        return 0;
 }

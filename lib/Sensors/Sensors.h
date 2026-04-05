@@ -21,10 +21,10 @@ public:
 
 private:
     int pinFL, pinFR, pinL, pinR;
-
     int valFL, valFR, valL, valR;
-
     int baseFL, baseFR, baseL, baseR;
+
+    int readIR(int pin, int emitPin);
 };
 
 #endif

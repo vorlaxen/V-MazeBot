@@ -31,45 +31,55 @@ void Sensors::calibrate(int samples)
     long sumL = 0;
     long sumR = 0;
 
-    for(int i=0;i<samples;i++)
+    for(int i = 0; i < samples; i++)
     {
         update();
 
         sumFL += valFL;
         sumFR += valFR;
-        sumL += valL;
-        sumR += valR;
+        sumL  += valL;
+        sumR  += valR;
 
         delay(2);
     }
 
     baseFL = sumFL / samples;
     baseFR = sumFR / samples;
-    baseL  = sumL / samples;
-    baseR  = sumR / samples;
+    baseL  = sumL  / samples;
+    baseR  = sumR  / samples;
+}
+
+int Sensors::readIR(int pin, int emitPin)
+{
+    digitalWrite(emitPin, LOW);
+    delayMicroseconds(50);
+    int ambient = analogRead(pin);
+
+    digitalWrite(emitPin, HIGH);
+    delayMicroseconds(80);
+    int reflect = analogRead(pin);
+
+    digitalWrite(emitPin, LOW);
+
+    int value = reflect - ambient;
+
+    if(value < 0) value = 0;
+
+    return value;
 }
 
 void Sensors::update()
 {
-    digitalWrite(EMIT_FRONT_L, HIGH);
-    digitalWrite(EMIT_FRONT_R, HIGH);
+    valFL = readIR(pinFL, EMIT_FRONT_L) - baseFL;
+    valFR = readIR(pinFR, EMIT_FRONT_R) - baseFR;
 
-    delayMicroseconds(80);
+    valL = readIR(pinL, EMIT_SIDE) - baseL;
+    valR = readIR(pinR, EMIT_SIDE) - baseR;
 
-    valFL = analogRead(pinFL);
-    valFR = analogRead(pinFR);
-
-    digitalWrite(EMIT_FRONT_L, LOW);
-    digitalWrite(EMIT_FRONT_R, LOW);
-
-    digitalWrite(EMIT_SIDE, HIGH);
-
-    delayMicroseconds(80);
-
-    valL = analogRead(pinL);
-    valR = analogRead(pinR);
-
-    digitalWrite(EMIT_SIDE, LOW);
+    if(valFL < 0) valFL = 0;
+    if(valFR < 0) valFR = 0;
+    if(valL < 0) valL = 0;
+    if(valR < 0) valR = 0;
 }
 
 int Sensors::frontLeft(){ return valFL; }
@@ -79,5 +89,6 @@ int Sensors::right(){ return valR; }
 
 float Sensors::getCenterError()
 {
-    return (valL - valR) * 0.01;
+    float sum = valL + valR + 1;
+    return (float)(valL - valR) / sum;
 }
